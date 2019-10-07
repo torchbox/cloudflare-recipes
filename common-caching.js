@@ -1,6 +1,6 @@
-// NOTE: For this worker to work properly, you MUST NOT set
-// "Cache everything" page rule on your website.
-// Otherwise `fetch()` calls will make Cloudflare to store cache.
+// NOTE: A 'Cache Level' page rule set to 'Cache Everything' will
+// prevent private cookie cache skipping from working, as it is
+// applied after this worker runs.
 
 const PRIVATE_COOKIES = [
   'csrftoken',
