@@ -1,4 +1,6 @@
 // Add a holding page, served from an external URL (e.g. S3)
+// To send raw HTML directly from the worker,
+// see https://developers.cloudflare.com/workers/templates/pages/send_raw_html/
 
 addEventListener("fetch", event => {
     event.respondWith(fetchAndReplace(event.request))
