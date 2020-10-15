@@ -54,11 +54,7 @@ function stripIgnoredQuerystring(request) {
   if (stripKeys.length) {
     stripKeys.forEach(v => url.searchParams.delete(v));
 
-    return new Request(url, {
-      body: request.body,
-      headers: request.headers,
-      redirect: request.redirect,
-    });
+    return new Request(url, request);
   }
   return request;
 }
