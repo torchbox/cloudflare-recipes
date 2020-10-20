@@ -28,10 +28,10 @@ async function main(event) {
     return fetch(request);
   }
 
-  let response = await cache.match(event.request)
+  let response = await cache.match(request)
   if (!response) {
     response = await fetch(request)
-    event.waitUntil(cache.put(event.request, response.clone()))
+    event.waitUntil(cache.put(request, response.clone()))
   }
 
   return response;
