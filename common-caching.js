@@ -34,7 +34,7 @@ async function main(event) {
   let response = await cache.match(request);
   if (!response) {
     response = await fetch(request);
-    if (responseIsCachable(request, response)) {
+    if (responseIsCachable(response)) {
       event.waitUntil(cache.put(request, response.clone()));
     }
   }
