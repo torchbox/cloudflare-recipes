@@ -61,6 +61,9 @@ function requestIsCachable(request) {
   if (hasPrivateCookie(request)) {
     return false;
   }
+  if (hasAuthorizationHeader(request)) {
+    return false;
+  }
   return true;
 }
 
@@ -73,6 +76,10 @@ function hasPrivateCookie(request) {
       return cookieString.includes(item);
     })
   );
+}
+
+function hasAuthorizationHeader(request) {
+  return request.headers.has("Authorization");
 }
 
 function responseIsCachable(response) {
