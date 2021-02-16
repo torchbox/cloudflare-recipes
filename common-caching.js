@@ -76,7 +76,7 @@ function hasPrivateCookie(request) {
 }
 
 function responseIsCachable(response) {
-  if (!CACHABLE_HTTP_STATUS_CODES.includes(response.statusCode)) {
+  if (!CACHABLE_HTTP_STATUS_CODES.includes(response.status)) {
     return false;
   }
   return true;
