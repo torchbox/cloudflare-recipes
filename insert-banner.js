@@ -7,22 +7,22 @@ addEventListener("fetch", (event) => {
 
 async function main(event) {
   let response = await fetch(event.request);
-  return insertContent(response);
+  return addBanner(response);
 }
 
-class ContentElementHandler {
-  async comments(comment) {
-    const { directive, url } = comment.text.split(":");
-
-    if (directive == "insert") {
-      const response = await fetch(url);
-      comment.replace(response.body, { html: true });
-    }
+class BannerElementHandler {
+  async element(element) {
+    element.before(
+      `<div>
+            Banner content
+       </div>`,
+      { html: true }
+    );
   }
 }
 
 function insertContent(response) {
   return new HTMLRewriter()
-    .on("*", new ContentElementHandler())
+    .on("*", new BannerElementHandler())
     .transform(response);
 }
