@@ -65,8 +65,9 @@ function requestIsCachable(request) {
 }
 
 function hasPrivateCookie(request) {
+  const requestCookieNames = request.headers.get("Cookie").split(";").map(cookie => cookie.split("=")[0].trim());
   // Check if the request includes any of the specified 'private' cookies
-  return PRIVATE_COOKIES.some((private_cookie_name) => getCookie(request, private_cookie_name) != "");
+  return PRIVATE_COOKIES.some((privateCookieName) => requestCookieNames.includes(privateCookieName));
 }
 
 function responseIsCachable(response) {
@@ -74,27 +75,4 @@ function responseIsCachable(response) {
     return false;
   }
   return true;
-}
-
-/**
- * Source: https://developers.cloudflare.com/workers/examples/extract-cookie-value
- * Gets the cookie with the name from the request headers
- * @param {Request} request incoming Request
- * @param {string} name of the cookie to get
- */
- function getCookie(request, name) {
-  let result = ""
-  const cookieString = request.headers.get("Cookie")
-  if (cookieString) {
-    const cookies = cookieString.split(";")
-    cookies.forEach(cookie => {
-      const cookiePair = cookie.split("=", 2)
-      const cookieName = cookiePair[0].trim()
-      if (cookieName === name) {
-        const cookieVal = cookiePair[1]
-        result = cookieVal
-      }
-    })
-  }
-  return result
 }
