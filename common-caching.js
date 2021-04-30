@@ -10,6 +10,8 @@ const STRIP_QUERYSTRING_KEYS = [
   "utm_medium",
   "utm_term",
   "utm_content",
+  "gclid",
+  "fbclid",
   "dm_i", // DotDigital
 ];
 
