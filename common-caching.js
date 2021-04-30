@@ -65,9 +65,19 @@ function requestIsCachable(request) {
 }
 
 function hasPrivateCookie(request) {
-  const requestCookieNames = request.headers.get("Cookie").split(";").map(cookie => cookie.split("=")[0].trim());
+  const cookieHeader = request.headers.get("Cookie");
+  if (!cookieHeader) {
+    return false;
+  }
+
+  const requestCookieNames = cookieHeader
+    .split(";")
+    .map((cookie) => cookie.split("=")[0].trim());
+
   // Check if the request includes any of the specified 'private' cookies
-  return PRIVATE_COOKIES.some((privateCookieName) => requestCookieNames.includes(privateCookieName));
+  return PRIVATE_COOKIES.some((privateCookieName) =>
+    requestCookieNames.includes(privateCookieName)
+  );
 }
 
 function responseIsCachable(response) {
