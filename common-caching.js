@@ -139,15 +139,43 @@ function replaceStrippedQsOnRedirectResponse(response, strippedParams) {
 
     if (["301", "302"].includes(response.status)) {
         const locationHeaderValue = response.headers.get("location");
+        let locationUrl;
+
         if (!locationHeaderValue) {
             return response;
         }
-        const locationUrl = new URL(locationHeaderValue);
+
+        const isAbsolute = isUrlAbsolute(locationHeaderValue);
+
+        if (!isAbsolute) {
+            // If the Location URL isn't absolute, we need to provide a Host so we can use
+            // a URL object.
+            locationUrl = new URL(locationHeaderValue, "http://www.example.com");
+        } else {
+            locationUrl = new URL(locationHeaderValue)
+        }
+
         for (const [key, value] of Object.entries(strippedParams)) {
             locationUrl.searchParams.append(key, value);
         }
-        response.headers.set("location", locationUrl.toString());
+
+        let newLocation;
+
+        if (isAbsolute) {
+            newLocation = locationUrl.toString()
+        } else {
+            newLocation = `${locationUrl.pathname}${locationUrl.search}`;
+        }
+
+        response.headers.set("location", newLocation);
     }
 
     return response
+}
+
+/**
+ * URL Utilities
+ */
+function isUrlAbsolute(url) {
+    return (url.indexOf('://') > 0 || url.indexOf('//') === 0);
 }
