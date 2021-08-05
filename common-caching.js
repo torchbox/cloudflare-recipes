@@ -18,6 +18,10 @@ const STRIP_QUERYSTRING_KEYS = [
     "dm_i", // DotDigital
 ];
 
+// If this is true, the querystring keys stripped from the request will be
+// addeed to any Location header served by a redirect.
+const REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION = false
+
 // Only these status codes should be considered cacheable
 // (from https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4)
 const CACHABLE_HTTP_STATUS_CODES = [200, 203, 206, 300, 301, 410];
@@ -48,7 +52,9 @@ async function main(event) {
         }
     }
 
-    response = replaceStrippedQsOnRedirectResponse(response, strippedParams);
+    if (REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION) {
+        response = replaceStrippedQsOnRedirectResponse(response, strippedParams);
+    }
 
     return response;
 }
