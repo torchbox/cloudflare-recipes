@@ -135,9 +135,9 @@ function replaceStrippedQsOnRedirectResponse(response, strippedParams) {
      * If it is, add the stripped querystrings to the location header.
      * This allows us to persist tracking querystrings (like UTM) over redirects.
      */
-    const response = new Response(response.body, response);
+    response = new Response(response.body, response);
 
-    if (["301", "302"].includes(response.status)) {
+    if ([301, 302].includes(response.status)) {
         const locationHeaderValue = response.headers.get("location");
         let locationUrl;
 
