@@ -16,6 +16,7 @@ const STRIP_QUERYSTRING_KEYS = [
     "gclid",
     "fbclid",
     "dm_i", // DotDigital
+    "msclkid",
 ];
 
 // If this is true, the querystring keys stripped from the request will be
