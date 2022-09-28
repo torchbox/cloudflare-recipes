@@ -23,6 +23,10 @@ const STRIP_QUERYSTRING_KEYS = [
 // addeed to any Location header served by a redirect.
 const REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION = false
 
+// If this is true, querystring key are stripped if they have no value eg. ?foo
+// Disabled by default, but highly recommended
+const STRIP_VALUELESS_QUERYSTRING_KEYS = false;
+
 // Only these status codes should be considered cacheable
 // (from https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4)
 const CACHABLE_HTTP_STATUS_CODES = [200, 203, 206, 300, 301, 410];
@@ -35,7 +39,7 @@ async function main(event) {
     const cache = caches.default;
     let request = event.request;
     let strippedParams;
-    [request, strippedParams] = stripIgnoredQuerystring(request);
+    [request, strippedParams] = stripQuerystring(request);
 
     if (!requestIsCachable(request)) {
         // If the request isn't cacheable, return a Response directly from the origin.
@@ -83,28 +87,38 @@ function responseIsCachable(response) {
 /*
  * Request Utilities
  */
-function stripIgnoredQuerystring(request) {
+function stripQuerystring(request) {
     /**
-     * Given a Request, return a new Request with the ignored querystring keys stripped out,
+     * Given a Request, return a new Request with the ignored or blank querystring keys stripped out,
      * along with an object representing the stripped values.
      */
     const url = new URL(request.url);
+
     const stripKeys = STRIP_QUERYSTRING_KEYS.filter((v) =>
-        url.searchParams.has(v)
+        url.searchParams.has(v),
     );
 
     let strippedParams = {};
 
     if (stripKeys.length) {
         stripKeys.reduce((acc, key) => {
-            acc[key] = url.searchParams.getAll(key)
-            url.searchParams.delete(key)
-            return acc
+            acc[key] = url.searchParams.getAll(key);
+            url.searchParams.delete(key);
+            return acc;
         }, strippedParams);
-
-        return [new Request(url, request), strippedParams];
     }
-    return [request, strippedParams];
+
+    if (STRIP_VALUELESS_QUERYSTRING_KEYS) {
+        // Strip query params without values to avoid unnecessary cache misses
+        for (const [key, value] of url.searchParams.entries()) {
+            if (!value) {
+                url.searchParams.delete(key);
+                strippedParams[key] = '';
+            }
+        }
+    }
+
+    return [new Request(url, request), strippedParams];
 }
 
 function hasPrivateCookie(request) {
