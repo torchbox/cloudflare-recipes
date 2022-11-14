@@ -17,6 +17,7 @@ const STRIP_QUERYSTRING_KEYS = [
     "fbclid",
     "dm_i", // DotDigital
     "msclkid",
+    "al_applink_data",  // Meta outbound app links
 ];
 
 // If this is true, the querystring keys stripped from the request will be
