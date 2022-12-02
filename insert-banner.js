@@ -6,12 +6,12 @@ addEventListener("fetch", (event) => {
 });
 
 async function main(event) {
-  let response = await fetch(event.request);
+  const response = await fetch(event.request);
   return addBanner(response);
 }
 
 class BannerElementHandler {
-  async element(element) {
+  static async element(element) {
     element.before(
       `<div>
             Banner content
@@ -21,7 +21,7 @@ class BannerElementHandler {
   }
 }
 
-function insertContent(response) {
+function addBanner(response) {
   return new HTMLRewriter()
     .on("*", new BannerElementHandler())
     .transform(response);

@@ -20,9 +20,9 @@ async function handleRequest(request) {
   }
 
   // Return something nonsensical for an invalid domain
-  return new Response("", {status: 404});
+  return new Response("", { status: 404 });
 }
 
-addEventListener("fetch", event => {
+addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
 });
