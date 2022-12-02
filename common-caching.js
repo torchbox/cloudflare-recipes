@@ -63,7 +63,6 @@ const STRIP_QUERYSTRING_KEYS = [
     "redirect_log_mongo_id",
     "redirect_mongo_id",
     "sb_referer_host",
-    "ref",
 ];
 
 // If this is true, the querystring keys stripped from the request will be
