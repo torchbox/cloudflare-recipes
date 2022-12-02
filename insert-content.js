@@ -7,7 +7,7 @@ addEventListener("fetch", (event) => {
 });
 
 async function main(event) {
-  let response = await fetch(event.request);
+  const response = await fetch(event.request);
   return insertContent(response);
 }
 
@@ -31,7 +31,7 @@ class DocumentHandler {
       fetchUrl.pathname = url;
     }
 
-    if (directive == "include") {
+    if (directive === "include") {
       const response = await fetch(fetchUrl.href);
       comment.replace(await response.text(), { html: true });
     }
