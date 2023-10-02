@@ -93,14 +93,15 @@ async function main(event) {
         return fetch(request);
     }
 
-    let response = await cache.match(request);
+    const cachingRequest = getCachingRequest(request);
+    let response = await cache.match(cachingRequest);
 
     if (!response) {
         // If we didn't get a response from the cache, fetch one from the origin
         // and put it in the cache.
         response = await fetch(request);
         if (responseIsCachable(response)) {
-            event.waitUntil(cache.put(request, response.clone()));
+            event.waitUntil(cache.put(cachingRequest, response.clone()));
         }
     }
 
@@ -128,6 +129,15 @@ function responseIsCachable(response) {
      * Currently the only factor here is whether the status code is cachable.
      */
     return CACHABLE_HTTP_STATUS_CODES.includes(response.status)
+}
+
+function getCachingRequest(request) {
+    /**
+     * When needed, modify a request for use as the cache key.
+     *
+     * Note: Modifications to this request are not sent upstream.
+     */
+    return new Request(request);
 }
 
 
