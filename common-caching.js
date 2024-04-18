@@ -137,7 +137,7 @@ function getCachingRequest(request) {
      *
      * Note: Modifications to this request are not sent upstream.
      */
-    return new Request(request);
+    return new Request(new URL(request.url), request);  // Do nothing.
 }
 
 
