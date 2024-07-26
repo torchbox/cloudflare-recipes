@@ -5,6 +5,13 @@
 // When any cookie in this list is present in the request, cache will be skipped
 const PRIVATE_COOKIES = ["sessionid"];
 
+// Cookies to include in the cache key
+const VARY_COOKIES = [];
+
+// Headers to include in the cache key.
+// Note: Do not add `cookie` to this list!
+const VARY_HEADERS = [];
+
 // These querystring keys are stripped from the request as they are generally not
 // needed by the origin.
 const STRIP_QUERYSTRING_KEYS = [
@@ -133,11 +140,26 @@ function responseIsCachable(response) {
 
 function getCachingRequest(request) {
     /**
-     * When needed, modify a request for use as the cache key.
+     * Create a new request for use as a cache key.
      *
      * Note: Modifications to this request are not sent upstream.
      */
-    return new Request(new URL(request.url), request);  // Do nothing.
+
+    const cookies = getCookies(request);
+
+    const requestURL = new URL(request.url);
+
+    // Include specified cookies in cache key
+    for (const cookieName of VARY_COOKIES) {
+        requestURL.searchParams.set(`cookie-${cookieName}`, cookies[cookieName] || '');
+    }
+
+    // Include specified headers in cache key
+    for (const headerName of VARY_HEADERS) {
+        requestURL.searchParams.set(`header-${headerName}`, request.headers.get(headerName) || '');
+    }
+
+    return new Request(requestURL, request);
 }
 
 
@@ -182,18 +204,30 @@ function hasPrivateCookie(request) {
     /*
      * Given a Request, determine if one of the 'private' cookies are present.
      */
-    const cookieHeader = request.headers.get("Cookie");
+    const allCookies = getCookies(request);
+
+    // Check if any of the private cookies are present and have a non-empty value
+    for (const cookieName of PRIVATE_COOKIES) {
+        if (cookieName in allCookies && allCookies[cookieName]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getCookies(request) {
+    /*
+     * Extract the cookies from a given request
+     */
+    const cookieHeader = request.headers.get('Cookie');
     if (!cookieHeader) {
-        return false;
+        return {};
     }
 
-    const requestCookieNames = cookieHeader
-        .split(";")
-        .map((cookie) => cookie.split("=")[0].trim());
-
-    return PRIVATE_COOKIES.some((privateCookieName) =>
-        requestCookieNames.includes(privateCookieName)
-    );
+    return cookieHeader.split(';').reduce((cookieMap, cookieString) => {
+        const [cookieKey, cookieValue] = cookieString.split('=');
+        return { ...cookieMap, [cookieKey.trim()]: cookieValue.trim() };
+    }, {});
 }
 
 /**
