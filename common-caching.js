@@ -8,9 +8,21 @@ const PRIVATE_COOKIES = ["sessionid"];
 // Cookies to include in the cache key
 const VARY_COOKIES = [];
 
-// Headers to include in the cache key.
+// Request headers to include in the cache key.
 // Note: Do not add `cookie` to this list!
-const VARY_HEADERS = [];
+const VARY_HEADERS = [
+    "X-Requested-With",
+
+    // HTMX
+    "HX-Boosted",
+    "HX-Current-URL",
+    "HX-History-Restore-Request",
+    "HX-Prompt",
+    "HX-Request",
+    "HX-Target",
+    "HX-Trigger-Name",
+    "HX-Trigger",
+];
 
 // These querystring keys are stripped from the request as they are generally not
 // needed by the origin.
