@@ -1,0 +1,25 @@
+{
+  "name": "cloudflare-recipes",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "lint:eslint": "eslint .",
+    "lint:prettier": "prettier --check *.js",
+    "lint": "run-s lint:*",
+    "format:prettier": "prettier --write *.js",
+    "format:eslint": "eslint --fix .",
+    "format": "run-s format:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/torchbox/cloudflare-recipes"
+  },
+  "author": "Torchbox",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.28.0",
+    "eslint-config-torchbox": "^1.1.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.8.0"
+  }
+}

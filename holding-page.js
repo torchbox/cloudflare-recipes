@@ -2,25 +2,25 @@
 // To send raw HTML directly from the worker,
 // see https://developers.cloudflare.com/workers/templates/pages/send_raw_html/
 
-addEventListener("fetch", event => {
-    event.respondWith(fetchAndReplace(event.request))
-})
-
-async function fetchAndReplace(request) {
-    let modifiedHeaders = new Headers()
-
-    modifiedHeaders.set('Content-Type', 'text/html')
-    modifiedHeaders.append('Pragma', 'no-cache')
-
-    const holdingPage = await fetch(holdingPageUrl)
-    const content = await holdingPage.text();
-
-    // Return modified response.
-    return new Response(content, {
-        headers: modifiedHeaders
-    })
-}
-
 // Update the URL to your holding page.
 // Keep it simple, small and self-contained.
-const holdingPageUrl = "https://example.com"
+const HOLDING_PAGE_URL = "https://example.com";
+
+addEventListener("fetch", (event) => {
+  event.respondWith(fetchAndReplace());
+});
+
+async function fetchAndReplace() {
+  const modifiedHeaders = new Headers();
+
+  modifiedHeaders.set("Content-Type", "text/html");
+  modifiedHeaders.append("Pragma", "no-cache");
+
+  const holdingPage = await fetch(HOLDING_PAGE_URL);
+  const content = await holdingPage.text();
+
+  // Return modified response.
+  return new Response(content, {
+    headers: modifiedHeaders,
+  });
+}
