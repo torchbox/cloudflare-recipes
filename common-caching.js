@@ -97,40 +97,36 @@ const STRIP_VALUELESS_QUERYSTRING_KEYS = false;
 // (from https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4)
 const CACHABLE_HTTP_STATUS_CODES = [200, 203, 206, 300, 301, 410];
 
-addEventListener("fetch", (event) => {
-  event.respondWith(main(event));
-});
+export default {
+  async fetch(originalRequest, env, ctx) {
+    const cache = caches.default;
+    // eslint-disable-next-line prefer-const
+    const [request, strippedParams] = stripQuerystring(originalRequest);
 
-async function main(event) {
-  const cache = caches.default;
-  let { request } = event;
-  let strippedParams;
-  // eslint-disable-next-line prefer-const
-  [request, strippedParams] = stripQuerystring(request);
-
-  if (!requestIsCachable(request)) {
-    // If the request isn't cacheable, return a Response directly from the origin.
-    return fetch(request);
-  }
-
-  const cachingRequest = getCachingRequest(request);
-  let response = await cache.match(cachingRequest);
-
-  if (!response) {
-    // If we didn't get a response from the cache, fetch one from the origin
-    // and put it in the cache.
-    response = await fetch(request);
-    if (responseIsCachable(response)) {
-      event.waitUntil(cache.put(cachingRequest, response.clone()));
+    if (!requestIsCachable(request)) {
+      // If the request isn't cacheable, return a Response directly from the origin.
+      return fetch(request);
     }
-  }
 
-  if (REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION) {
-    response = replaceStrippedQsOnRedirectResponse(response, strippedParams);
-  }
+    const cachingRequest = getCachingRequest(request);
+    let response = await cache.match(cachingRequest);
 
-  return response;
-}
+    if (!response) {
+      // If we didn't get a response from the cache, fetch one from the origin
+      // and put it in the cache.
+      response = await fetch(request);
+      if (responseIsCachable(response)) {
+        ctx.waitUntil(cache.put(cachingRequest, response.clone()));
+      }
+    }
+
+    if (REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION) {
+      response = replaceStrippedQsOnRedirectResponse(response, strippedParams);
+    }
+
+    return response;
+  },
+};
 
 /*
  * Cacheability Utilities

@@ -10,19 +10,17 @@ const TOKENS = {
   "example.com": "deadbeef5",
 };
 
-async function handleRequest(request) {
-  const url = new URL(request.url);
+export default {
+  handleRequest(request) {
+    const url = new URL(request.url);
 
-  const verificationToken = TOKENS[url.host];
-  if (verificationToken) {
-    // If the domain is known and we have a token, return it.
-    return new Response(verificationToken);
-  }
+    const verificationToken = TOKENS[url.host];
+    if (verificationToken) {
+      // If the domain is known and we have a token, return it.
+      return new Response(verificationToken);
+    }
 
-  // Return something nonsensical for an invalid domain
-  return new Response("", { status: 404 });
-}
-
-addEventListener("fetch", (event) => {
-  event.respondWith(handleRequest(event.request));
-});
+    // Return something nonsensical for an invalid domain
+    return new Response("", { status: 404 });
+  },
+};
