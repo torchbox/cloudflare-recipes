@@ -6,7 +6,9 @@
 const PRIVATE_COOKIES = ["sessionid"];
 
 // Cookies to include in the cache key
-const VARY_COOKIES = [];
+const VARY_COOKIES = [
+  "theme_mode"
+];
 
 // Request headers to include in the cache key.
 // Note: Do not add `cookie` to this list!
