@@ -27,11 +27,17 @@ const VARY_HEADERS = [
 // These querystring keys are stripped from the request as they are generally not
 // needed by the origin.
 const STRIP_QUERYSTRING_KEYS = [
+  // UTM
+  "utm_id",
   "utm_source",
   "utm_campaign",
   "utm_medium",
   "utm_term",
   "utm_content",
+  "utm_source_platform",
+  "utm_creative_format",
+  "utm_marketing_tactic",
+
   "gclid",
   "fbclid",
   "dm_i", // DotDigital
