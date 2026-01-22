@@ -39,6 +39,8 @@ const STRIP_QUERYSTRING_KEYS = [
   "utm_marketing_tactic",
 
   "gclid",
+  "wbraid",
+  "gbraid",
   "fbclid",
   "dm_i", // DotDigital
   "msclkid",
