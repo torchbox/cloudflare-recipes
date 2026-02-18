@@ -6,6 +6,7 @@ module.exports = {
         "no-use-before-define": 0
     },
     globals: {
-        "HTMLRewriter": "readonly"
+        "HTMLRewriter": "readonly",
+        "WAGTAIL_AB_TESTING_WORKER_TOKEN": "readonly"
     }
 };
