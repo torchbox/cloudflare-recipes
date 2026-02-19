@@ -1,3 +1,75 @@
+// This is a Cloudflare Worker script that implements caching with support for A/B testing.
+// It is based on the common-caching.js script, with additional logic to handle A/B testing scenarios, based on:
+// https://github.com/wagtail-nest/wagtail-ab-testing/blob/204493c2a78131acf52d5feda3ec40425cc0b58a/README.md#running-ab-tests-on-a-site-that-uses-cloudflare-caching
+//
+// A path can only be identified as having an A/B test after it has been requested.
+// If it is an A/B test, ensure it never gets put into the cache via responseIsCachable, and the common caching
+// logic will miss on the cache and fetch the A/B test from the origin.
+
+// ** Set WAGTAIL_AB_TESTING_WORKER_TOKEN as a global variable in Cloudflare Workers dashboard **
+// This should match the token on your Django settings
+// NOTE: Wagtail AB Testing is incompatible with Basic Authentication because the worker uses the Authorization header
+// to authenticate itself to the package, replacing any Basic scheme Authorization header on the incoming request.
+
+const AB_TEST_HEADER = "X-WagtailAbTesting-Test";
+
+async function fetchOrigin(request, env) {
+  if (request.method === "GET") {
+    const newRequest = new Request(request, {
+      headers: {
+        ...request.headers,
+        Authorization: `Token ${env.WAGTAIL_AB_TESTING_WORKER_TOKEN}`,
+        "X-Requested-With": "WagtailAbTestingWorker",
+      },
+    });
+
+    const response = await fetch(newRequest);
+
+    // If there is a test running at the URL, the worker would return
+    // a JSON response containing both versions of the page. Also, it
+    // returns the test ID in the X-WagtailAbTesting-Test header.
+    const testId = response.headers.get(AB_TEST_HEADER);
+    if (testId) {
+      // Participants of a test would have a cookie that tells us which
+      // version of the page being tested on that they should see
+      // If they don't have this cookie, serve a random version
+      const versionCookieName = `abtesting-${testId}-version`;
+      const cookie = request.headers.get("cookie");
+      let version;
+      if (cookie && cookie.includes(`${versionCookieName}=control`)) {
+        version = "control";
+      } else if (cookie && cookie.includes(`${versionCookieName}=variant`)) {
+        version = "variant";
+      } else if (Math.random() < 0.5) {
+        version = "control";
+      } else {
+        version = "variant";
+      }
+
+      const jsonResponse = await response.json();
+      return new Response(jsonResponse[version], {
+        headers: {
+          ...response.headers,
+          "Content-Type": "text/html",
+        },
+      });
+    }
+
+    return response;
+  }
+
+  return fetch(request);
+}
+
+// ----------------------------------------------------
+//
+// Lightly modified common-caching.js script, based on:
+// https://github.com/torchbox/cloudflare-recipes/blob/cdafd8dbbb0475c25806fb32d3c6c24145924596/common-caching.js
+//
+// fetchOrigin replaces calls to fetch to ensure A/B test responses are handled correctly
+// responseIsCachable has an additional clause to prevent caching of A/B tests
+// ----------------------------------------------------
+
 // NOTE: A 'Cache Level' page rule set to 'Cache Everything' will
 // prevent private cookie cache skipping from working, as it is
 // applied after this worker runs.
@@ -105,40 +177,36 @@ const STRIP_VALUELESS_QUERYSTRING_KEYS = false;
 // (from https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4)
 const CACHABLE_HTTP_STATUS_CODES = [200, 203, 206, 300, 301, 410];
 
-addEventListener("fetch", (event) => {
-  event.respondWith(main(event));
-});
+export default {
+  async fetch(originalRequest, env, ctx) {
+    const cache = caches.default;
+    // eslint-disable-next-line prefer-const
+    const [request, strippedParams] = stripQuerystring(originalRequest);
 
-async function main(event) {
-  const cache = caches.default;
-  let { request } = event;
-  let strippedParams;
-  // eslint-disable-next-line prefer-const
-  [request, strippedParams] = stripQuerystring(request);
-
-  if (!requestIsCachable(request)) {
-    // If the request isn't cacheable, return a Response directly from the origin.
-    return fetch(request);
-  }
-
-  const cachingRequest = getCachingRequest(request);
-  let response = await cache.match(cachingRequest);
-
-  if (!response) {
-    // If we didn't get a response from the cache, fetch one from the origin
-    // and put it in the cache.
-    response = await fetch(request);
-    if (responseIsCachable(response)) {
-      event.waitUntil(cache.put(cachingRequest, response.clone()));
+    if (!requestIsCachable(request)) {
+      // If the request isn't cacheable, return a Response directly from the origin.
+      return fetchOrigin(request, env);
     }
-  }
 
-  if (REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION) {
-    response = replaceStrippedQsOnRedirectResponse(response, strippedParams);
-  }
+    const cachingRequest = getCachingRequest(request);
+    let response = await cache.match(cachingRequest);
 
-  return response;
-}
+    if (!response) {
+      // If we didn't get a response from the cache, fetch one from the origin
+      // and put it in the cache.
+      response = await fetchOrigin(request, env);
+      if (responseIsCachable(response)) {
+        ctx.waitUntil(cache.put(cachingRequest, response.clone()));
+      }
+    }
+
+    if (REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION) {
+      response = replaceStrippedQsOnRedirectResponse(response, strippedParams);
+    }
+
+    return response;
+  },
+};
 
 /*
  * Cacheability Utilities
@@ -154,9 +222,12 @@ function requestIsCachable(request) {
 function responseIsCachable(response) {
   /*
    * Given a Response, determine if it should be cached.
-   * Currently the only factor here is whether the status code is cachable.
+   * Factors here are whether the status code is cachable, and whether it is an A/B test response (uncached if so).
    */
-  return CACHABLE_HTTP_STATUS_CODES.includes(response.status);
+  return (
+    CACHABLE_HTTP_STATUS_CODES.includes(response.status) &&
+    !response.headers.has(AB_TEST_HEADER)
+  );
 }
 
 function getCachingRequest(request) {
@@ -215,7 +286,7 @@ function stripQuerystring(request) {
 
   if (STRIP_VALUELESS_QUERYSTRING_KEYS) {
     // Strip query params without values to avoid unnecessary cache misses
-    url.searchParams.entries().forEach(([key, value]) => {
+    [...url.searchParams.entries()].forEach(([key, value]) => {
       if (!value) {
         url.searchParams.delete(key);
         strippedParams[key] = "";
