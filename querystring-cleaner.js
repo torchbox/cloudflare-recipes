@@ -67,6 +67,8 @@ const STRIP_QUERYSTRING_KEYS = [
   "sb_referer_host",
 ];
 
+const INCLUDE_QUERYSTRING_KEYS = [];
+
 // If this is true, the querystring keys stripped from the request will be
 // addeed to any Location header served by a redirect.
 const REPLACE_STRIPPED_QUERYSTRING_ON_REDIRECT_LOCATION = false;
@@ -80,7 +82,7 @@ addEventListener("fetch", (event) => {
 });
 
 async function main(event) {
-  const [request, strippedParams] = stripQuerystring(event.request);
+  const [request, strippedParams] = filterQuerystring(event.request);
 
   let response = await fetch(request);
 
@@ -94,38 +96,28 @@ async function main(event) {
 /*
  * Request Utilities
  */
-function stripQuerystring(request) {
-  /**
-   * Given a Request, return a new Request with the ignored or blank querystring keys stripped out,
-   * along with an object representing the stripped values.
-   */
+
+function filterQuerystring(request) {
+  const removed = {};
   const url = new URL(request.url);
 
-  const stripKeys = STRIP_QUERYSTRING_KEYS.filter((v) =>
-    url.searchParams.has(v)
-  );
+  url.searchParams.entries().forEach(([key, value]) => {
+    const isBlocked = STRIP_QUERYSTRING_KEYS.includes(key);
+    const isNotAllowed =
+      INCLUDE_QUERYSTRING_KEYS.length &&
+      !INCLUDE_QUERYSTRING_KEYS.includes(key);
 
-  const strippedParams = {};
-
-  if (stripKeys.length) {
-    stripKeys.reduce((acc, key) => {
-      acc[key] = url.searchParams.getAll(key);
+    if (
+      isBlocked ||
+      isNotAllowed ||
+      (STRIP_VALUELESS_QUERYSTRING_KEYS && !value)
+    ) {
       url.searchParams.delete(key);
-      return acc;
-    }, strippedParams);
-  }
+      removed[key] = value || "";
+    }
+  });
 
-  if (STRIP_VALUELESS_QUERYSTRING_KEYS) {
-    // Strip query params without values to avoid unnecessary cache misses
-    url.searchParams.entries().forEach(([key, value]) => {
-      if (!value) {
-        url.searchParams.delete(key);
-        strippedParams[key] = "";
-      }
-    });
-  }
-
-  return [new Request(url, request), strippedParams];
+  return [new Request(url, request), removed];
 }
 
 /**
