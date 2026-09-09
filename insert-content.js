@@ -2,14 +2,14 @@
 // e.g.
 // <!-- include https://www.google.co.uk -->
 
-addEventListener("fetch", (event) => {
-  event.respondWith(main(event));
-});
-
-async function main(event) {
-  const response = await fetch(event.request);
-  return insertContent(response);
-}
+export default {
+  async fetch(request) {
+    const response = await fetch(request);
+    return new HTMLRewriter()
+      .onDocument(new DocumentHandler(response))
+      .transform(response);
+  },
+};
 
 class DocumentHandler {
   constructor(response) {
@@ -36,10 +36,4 @@ class DocumentHandler {
       comment.replace(await response.text(), { html: true });
     }
   }
-}
-
-function insertContent(response) {
-  return new HTMLRewriter()
-    .onDocument(new DocumentHandler(response))
-    .transform(response);
 }

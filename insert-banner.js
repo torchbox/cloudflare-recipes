@@ -1,14 +1,14 @@
 // Inject some HTML before a given element in the response
 // Uses the HTMLRewriter API https://developers.cloudflare.com/workers/runtime-apis/html-rewriter
 
-addEventListener("fetch", (event) => {
-  event.respondWith(main(event));
-});
-
-async function main(event) {
-  const response = await fetch(event.request);
-  return addBanner(response);
-}
+export default {
+  async fetch(request) {
+    const response = await fetch(request);
+    return new HTMLRewriter()
+      .on("*", new BannerElementHandler())
+      .transform(response);
+  },
+};
 
 class BannerElementHandler {
   static async element(element) {
@@ -19,10 +19,4 @@ class BannerElementHandler {
       { html: true }
     );
   }
-}
-
-function addBanner(response) {
-  return new HTMLRewriter()
-    .on("*", new BannerElementHandler())
-    .transform(response);
 }

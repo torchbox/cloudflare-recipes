@@ -6,21 +6,19 @@
 // Keep it simple, small and self-contained.
 const HOLDING_PAGE_URL = "https://example.com";
 
-addEventListener("fetch", (event) => {
-  event.respondWith(fetchAndReplace());
-});
+export default {
+  async fetch() {
+    const modifiedHeaders = new Headers();
 
-async function fetchAndReplace() {
-  const modifiedHeaders = new Headers();
+    modifiedHeaders.set("Content-Type", "text/html");
+    modifiedHeaders.append("Pragma", "no-cache");
 
-  modifiedHeaders.set("Content-Type", "text/html");
-  modifiedHeaders.append("Pragma", "no-cache");
+    const holdingPage = await fetch(HOLDING_PAGE_URL);
+    const content = await holdingPage.text();
 
-  const holdingPage = await fetch(HOLDING_PAGE_URL);
-  const content = await holdingPage.text();
-
-  // Return modified response.
-  return new Response(content, {
-    headers: modifiedHeaders,
-  });
-}
+    // Return modified response.
+    return new Response(content, {
+      headers: modifiedHeaders,
+    });
+  },
+};
